@@ -263,4 +263,10 @@ func Test_resolveToContextRootFn(t *testing.T) {
 		got := resolve(abs)
 		assert.Empty(t, got)
 	})
+
+	t.Run("relative name starting with dot dot", func(t *testing.T) {
+		got := resolve("..foo/bar")
+		expect := filepath.Join(contextRoot, "..foo/bar")
+		assert.Equal(t, expect, got)
+	})
 }

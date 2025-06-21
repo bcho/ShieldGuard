@@ -217,7 +217,7 @@ func resolveToContextRootFn(contextRoot string) func(string) string {
 		}
 		path = filepath.Clean(path)
 
-		if rel, err := filepath.Rel(contextRoot, path); err != nil || strings.HasPrefix(rel, "..") {
+		if rel, err := filepath.Rel(contextRoot, path); err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 			return ""
 		}
 
