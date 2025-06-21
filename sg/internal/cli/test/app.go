@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/Azure/ShieldGuard/sg/internal/engine"
 	"github.com/Azure/ShieldGuard/sg/internal/project"
@@ -173,8 +174,14 @@ func (cliApp *cliApp) queryFileTarget(
 ) ([]result.QueryResults, error) {
 	resolveToContextRoot := resolveToContextRootFn(contextRoot)
 
-	policyPaths := utils.Map(target.Policies, resolveToContextRoot)
-	paths := utils.Map(target.Paths, resolveToContextRoot)
+	policyPaths := utils.Filter(
+		utils.Map(target.Policies, resolveToContextRoot),
+		func(p string) bool { return p != "" },
+	)
+	paths := utils.Filter(
+		utils.Map(target.Paths, resolveToContextRoot),
+		func(p string) bool { return p != "" },
+	)
 	// TODO: load data paths
 	// dataPaths := utils.Map(target.Data, resolveToContextRoot)
 
@@ -205,11 +212,15 @@ func (cliApp *cliApp) queryFileTarget(
 
 func resolveToContextRootFn(contextRoot string) func(string) string {
 	return func(path string) string {
-		// FIXME(hbc): handle absolute paths input
-		//             We should limit the input to be relative to the context root.
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(contextRoot, path)
+		}
+		path = filepath.Clean(path)
 
-		fullPath := filepath.Join(contextRoot, path)
-		fullPath = filepath.Clean(fullPath)
-		return fullPath
+		if rel, err := filepath.Rel(contextRoot, path); err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return ""
+		}
+
+		return path
 	}
 }

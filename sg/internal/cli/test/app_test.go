@@ -240,3 +240,33 @@ exception[rules] {
 
 	assert.NoError(t, runErr)
 }
+
+func Test_resolveToContextRootFn(t *testing.T) {
+	contextRoot := resolveTestdataPath(t, "./testdata/basic")
+	resolve := resolveToContextRootFn(contextRoot)
+
+	t.Run("relative path", func(t *testing.T) {
+		got := resolve("foo/bar")
+		expect := filepath.Join(contextRoot, "foo/bar")
+		assert.Equal(t, expect, got)
+	})
+
+	t.Run("absolute inside context root", func(t *testing.T) {
+		abs := filepath.Join(contextRoot, "foo/bar")
+		got := resolve(abs)
+		assert.Equal(t, abs, got)
+	})
+
+	t.Run("absolute outside context root", func(t *testing.T) {
+		abs, err := filepath.Abs(filepath.Join(contextRoot, "..", "other", "foo"))
+		assert.NoError(t, err)
+		got := resolve(abs)
+		assert.Empty(t, got)
+	})
+
+	t.Run("relative name starting with dot dot", func(t *testing.T) {
+		got := resolve("..foo/bar")
+		expect := filepath.Join(contextRoot, "..foo/bar")
+		assert.Equal(t, expect, got)
+	})
+}
